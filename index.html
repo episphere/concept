@@ -1,0 +1,17 @@
+<head>
+    <script src='concept.js'></script>
+    <link href="concept.css" rel="stylesheet">
+</head>
+<body onload="concept.ui()">
+    <h1><span style="font-family:fantasy">Concept</span> <span style="font-size:small;color:blue">[<a href="https://github.com/episphere/concept" target="_blank">code</a>] [<a href="https://github.com/episphere/concept/issues" target="_blank">issues</a>] [<a href="#demoConcept" target="_blank">demo</a>]<span></h1>
+    <p style="color:maroon">Creating and managing concept IDs</p>
+    <hr>
+    <p>
+    This tool has a client side (this web page) and a server side component. 
+    The latter is triggered automatically (via <a href="https://help.github.com/en/actions" target="_blank">gihub actions</a>) everytime a github submission is made. 
+    The motivation is that domain subject researchers need a user-friendly versioned mechanism to create and manage concept IDs.
+    GitHub, particulalry after adding the actions worflow functionality in the Fall of 2019, appears well placed to serve both the client and server side.
+    Ultimately, the goal is that this application can be used by other organizations by simply forking this github repository.
+    </p>
+    <div id="conceptDiv"></div>
+</body>
