@@ -141,11 +141,12 @@ function processCluster(cluster, header, indexConceptId, nameToConcept, indexVar
         if(nameToConcept.hasOwnProperty(val)){
             cid = nameToConcept[val]
         }
-        else{
-            //fs.writeFileSync(cid + '.json', JSON.stringify({'conceptId':cid, 'variableName':val}));
-            jsonList.push({'conceptId':cid, 'variableName':val})
-            nameToConcept[val] = cid
-        }
+        
+        //fs.writeFileSync(cid + '.json', JSON.stringify({'conceptId':cid, 'variableName':val}));
+        jsonList.push({'conceptId':cid, 'variableName':val})
+        fs.writeFileSync(cid + '.json', JSON.stringify({'conceptId':cid, 'variableName':val}))
+        nameToConcept[val] = cid
+        
         if(!conceptIdList.includes(cid)){
             conceptIdList.push(cid)
         }
@@ -162,6 +163,8 @@ function processCluster(cluster, header, indexConceptId, nameToConcept, indexVar
             currCollection[header[leafIndex]] = leafObj;
             //fs.writeFileSync(currCollection['conceptId']+ '.json', JSON.stringify(currCollection));
             jsonList.push(currCollection)
+            fs.writeFileSync(currCollection['conceptId'] + '.json', JSON.stringify(currCollection))
+
         }
     }
     if(indexConceptId == -1 || firstRowJSON[header[indexConceptId]] == ''){
@@ -178,6 +181,8 @@ function processCluster(cluster, header, indexConceptId, nameToConcept, indexVar
         //console.log(cluster[0][indexConceptId])
     }
     jsonList.push(firstRowJSON);
+    fs.writeFileSync(firstRowJSON['conceptId'] + '.json', JSON.stringify(firstRowJSON))
+
 
 }
 
