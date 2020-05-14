@@ -7,7 +7,7 @@ class App extends React.Component{
   constructor(props){
     super(props);
     this.state ={
-      JSONoutput: '',
+      JSONoutput: [],
       fileReader:'',
       data: '',
       excelOutput:'',
@@ -513,8 +513,13 @@ readFile(data){
       }
   }
   this.setState({excelOutput:toPrint})
-  console.log(this.state.toPrint)
-  return JSON.stringify(jsonList);
+  //console.log(this.state.toPrint)
+  let toReturn = ''
+  for(let i = 0; i < jsonList.length; i++){
+    toReturn += JSON.stringify(jsonList[i], null, '    ') + '\n'
+  }
+  //return JSON.stringify(jsonList, null, '\t');
+  return jsonList
   //console.log(toPrint)
   //console.log(conceptIdList)
   
@@ -537,12 +542,34 @@ readFile(data){
     this.state.fileReader.onloadend = this.handleFileRead;
     this.state.fileReader.readAsText(file);
   }
-  
-
+  getNumSpaces=(str) =>{
+    let numStart = 0;
+    for(let i = 0; i < str.length; i++){
+      if(str.substring(i, i+1) == '-'){
+        numStart += 1;
+      }
+      else{
+        return numStart * 16 + 'px'
+      }
+    }
+    return numStart * 16 + 'px';
+  }
+  removeLeading = (str)=>{
+    let numStart = 0;
+    for(let i = 0; i < str.length; i++){
+      if(str.substring(i, i+1) == '-'){
+        numStart += 1;
+      }
+      else{
+        return str.substring(numStart)
+      }
+    }
+    return str.substring(numStart);
+  }
   render(){
     return (
-      <div className="App">
-        <header className="App-header">
+      <div className="App" style={{'text-align':'left'}}>
+        <header className="App-header" style = {{'font-size':'16px', 'padding-top':'50px', 'padding-bottom':'50px'}}>
           <input type='file'
                  id='file'
                  className='input-file'
@@ -551,12 +578,16 @@ readFile(data){
           ></input>
           <div>
       </div>
-          <ul>
-              {this.state.a}
-          </ul>
-          
-  
-         
+          <div>
+              {this.state.JSONoutput.map(s => (<p>{JSON.stringify(s, null, '-').split('\n').map((item) => {
+                return (
+                  <span style = {{'padding-left':this.getNumSpaces(item)}}>
+                  {this.removeLeading(item)}
+                  <br/>
+                  </span>
+                )
+              })}</p>))}
+          </div>
         </header>
       </div>
     );
