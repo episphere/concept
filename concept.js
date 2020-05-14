@@ -2,7 +2,6 @@ const fs = require('fs');
 const readline = require('readline')
 let conceptIdVariants = ["@id","conceptId"];
 let jsonList = [];
-let currIds = [];
 
 function getConceptIdIndex (header){
     for(let j = 0; j < conceptIdVariants.length; j++){
@@ -32,13 +31,13 @@ function generateRandomUUID(conceptIdList){
     }
 }
 
-function processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList, conceptIdObject){
+function processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList, conceptIdObject, sourceJSONS){
     let nonEmpty = [];
     let list = [1,2,3]
     let conceptIdObjectKeys =Object.keys(conceptIdObject)
     let conceptIdIndices = [];
     let generalId = -1;
-    conceptIdReverseLookup = {};
+    let conceptIdReverseLookup = {};
     for(let i = 0; i < conceptIdObjectKeys.length; i++){
         conceptIdIndices.push(parseInt(conceptIdObjectKeys[i]))
         conceptIdReverseLookup[conceptIdObject[conceptIdObjectKeys[i]]] = parseInt(conceptIdObjectKeys[i])
@@ -64,7 +63,7 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
             firstRowJSON[header[i]] = firstRow[i]
         }
     }
-    //console.log(firstRowJSON)
+
     if(!firstRowJSON.hasOwnProperty('conceptId') || firstRowJSON['conceptId'] == ''){
         if(nameToConcept.hasOwnProperty(firstRow[indexVariableName])){
             firstRowJSON['conceptId'] = nameToConcept[firstRow[indexVariableName]]
@@ -80,9 +79,58 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
         }
     }
     firstRow[conceptIdReverseLookup['thisRowId']] = firstRowJSON['conceptId']
-
-    console.log( firstRowJSON['conceptId'])
     
+    //find sources first
+    let conceptColNames = Object.keys(conceptIdReverseLookup)
+    for(let i = 0; i < conceptColNames.length; i++){
+        if(conceptColNames[i].indexOf('Source') != -1){
+            let currId = firstRow[conceptIdReverseLookup[conceptColNames[i]]]
+            
+            let currVarName = firstRow[conceptIdReverseLookup[conceptColNames[i]] + 1]
+            
+            if(currId == '' && nameToConcept.hasOwnProperty(currVarName)){
+                currId = nameToConcept[currVarName]
+            }
+
+            let found = -1;
+            for(let j = 0; j < sourceJSONS.length; j++){
+                let currJSON = sourceJSONS[j];
+                if(currId != '' && currJSON['conceptId'] == currId){
+                    found = i;
+                    if(!currJSON['subcollections'].includes(firstRowJSON['conceptId'] + '.json')){
+                        currJSON['subcollections'].push(firstRowJSON['conceptId'] + '.json')
+                    }
+                    j = sourceJSONS.length;
+                }
+                else if(currId == '' && currVarName == currJSON['Variable Name']){
+                    found = i;
+                    currId = currJSON['conceptId'];
+                    if(!currJSON['subcollections'].includes(firstRowJSON['conceptId'] + '.json')){
+                        currJSON['subcollections'].push(firstRowJSON['conceptId'] + '.json')
+                    }
+                    j = sourceJSONS.length
+                }
+            }
+            if(found == -1){
+                let newJSON = {}
+                if(currId == ''){
+                    currId = generateRandomUUID(conceptIdList);
+                }
+                
+                newJSON['conceptId'] = currId;
+                newJSON['Variable Name'] = currVarName;
+                newJSON['subcollections'] = [firstRowJSON['conceptId'] + '.json']
+                sourceJSONS.push(newJSON)
+            }
+            nameToConcept[currVarName] = currId
+            if(!conceptIdList.includes(currId)){
+                conceptIdList.push(currId)
+            }
+            
+            firstRowJSON[header[conceptIdReverseLookup[conceptColNames[i]] + 1]] = currId + '.json'
+            firstRow[conceptIdReverseLookup[conceptColNames[i]]] = currId;
+        }
+    }
 
     let collections = [];
     let collectionIds = [];
@@ -101,6 +149,8 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
             let nonEmptyIndex = nonEmpty[j];
             
             let currValue = currRow[nonEmptyIndex]
+            
+           
             if(currValue.indexOf('=') != -1){
                 leaf = currValue;
                 leafIndex = nonEmptyIndex;
@@ -165,8 +215,6 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
             cluster[i][conceptIdReverseLookup['leftMostId']] = cid;
             //fs.writeFileSync(cid + '.json', currCollection);
         }   
-
-
     }
 
     if(collections.length == 0  && leaves.length > 0){
@@ -249,7 +297,7 @@ function lookForConcepts(cluster, header, idsToInsert, leftMost){
         }
     }
     for(let i = 0; i < nonEmpty.length; i++){
-        if(nonEmpty[i] != leafIndex && nonEmpty[i] < leftMost[0]){
+        if(nonEmpty[i] != leafIndex && nonEmpty[i] < leftMost[0] && header[nonEmpty[i]] != 'conceptId'){
             leftMost[0] = nonEmpty[i];
             leftMost[1] = header[nonEmpty[i]]
         }
@@ -363,7 +411,7 @@ async function getConceptIds(fileName){
             for(let i = 0; i < nonIntersects.length; i++){
                 arr.splice(nonIntersects[i],0,'conceptId')
             }
-            toWrite += arr.join();
+            toWrite += arr.join(",");
             first = false;
             for(let i = 0; i < arr.length; i++){
                 if(arr[i].includes('conceptId') && i != arr.length - 1){
@@ -384,7 +432,7 @@ async function getConceptIds(fileName){
                 arr.splice(nonIntersects[i],0,'')
             }
             toWrite += '\n'
-            toWrite += arr.join();
+            toWrite += arr.join(",");
         }
         //console.log(arr)
     }
@@ -395,7 +443,9 @@ async function getConceptIds(fileName){
     return finalConceptIndices;
 }
 
-async function readFile(){
+async function readFile(fileName){
+    let jsonList = []
+    let sourceJSONS = []
     let ConceptIndex = '{}'
     if(fs.existsSync('varToConcept.json')){
         ConceptIndex = fs.readFileSync('varToConcept.json', {encoding:'utf8'})
@@ -409,8 +459,9 @@ async function readFile(){
     let conceptIdList = JSON.parse(idIndex)
     let varLabelIndex = 0;
     let cluster = []
-    let conceptIdObject = await getConceptIds('prelude1Concept.csv')
-    const fileStream = fs.createReadStream('prelude1Concept.csv');
+    let conceptIdObject = await getConceptIds(fileName)
+    
+    const fileStream = fs.createReadStream(fileName);
     const outFile = 'prelude1Concept1.csv'
     let excelOutput = []
     const rl = readline.createInterface({
@@ -441,7 +492,7 @@ async function readFile(){
                 cluster.push(arr);
             }
             else{
-                let returned = processCluster(cluster, header, nameToConcept, varLabelIndex, conceptIdList, conceptIdObject)
+                let returned = processCluster(cluster, header, nameToConcept, varLabelIndex, conceptIdList, conceptIdObject, sourceJSONS)
                 excelOutput.push(returned)
                 //console.log(cluster);
                 //console.log(cluster)
@@ -454,9 +505,11 @@ async function readFile(){
             currCluster = true;
         }
     }
-    let returned = processCluster(cluster, header, nameToConcept, varLabelIndex, conceptIdList, conceptIdObject);
+    let returned = processCluster(cluster, header, nameToConcept, varLabelIndex, conceptIdList, conceptIdObject, sourceJSONS);
     excelOutput.push(returned)
-    //console.log(jsonList)
+    for(let i = 0; i < sourceJSONS.length; i++){
+        fs.writeFileSync(sourceJSONS[i]['conceptId'] + '.json', JSON.stringify(sourceJSONS[i]));
+    }
     fs.writeFileSync('varToConcept.json', JSON.stringify(nameToConcept))
     fs.writeFileSync('conceptIds.txt', JSON.stringify(conceptIdList))
     rl.close();
@@ -467,14 +520,24 @@ async function readFile(){
         let cluster = excelOutput[i]
         for(let j = 0; j < cluster.length; j++){
             let row = cluster[j]
-            toPrint += cluster[j].join()
+            toPrint += cluster[j].map(function(value){
+                if(value.indexOf(',') != -1){
+                    return "\"" + value + "\"";
+                }
+                else{
+                    return value;
+                }
+            }).join(",");
+            console.log(cluster)
             if(i!=excelOutput.length-1 || j!=cluster.length -1){
                 toPrint += '\n'
             }
         }
     }
-    fs.writeFileSync('abc.csv', toPrint)
+    
+    fs.writeFileSync(fileName, toPrint)
     //console.log(toPrint)
     //console.log(conceptIdList)
+    
 }
-readFile();
+readFile('prelude.csv');
