@@ -246,6 +246,7 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
     }
     jsonList.push(firstRowJSON);
     fs.writeFileSync(firstRowJSON['conceptId'] + '.json', JSON.stringify(firstRowJSON))
+    console.log(cluster)
     return cluster;
 
 }
@@ -291,7 +292,10 @@ function lookForConcepts(cluster, header, idsToInsert, leftMost){
                     if(!idsToInsert.includes(j)){
                         idsToInsert.push(j)    
                     }
-                    leafIndex = j
+                    if(leafIndex == -1){
+                        leafIndex = j
+                    }
+                   
                 }
             }
         }
@@ -328,6 +332,7 @@ async function getConceptIds(fileName){
     let conceptIdIndices = []
     let leftMost = []
     let firstNotSource = -1;
+    let leftMostStart = 0;
     //console.log(nameToConcept)
     for await(const line of rl){
         //console.log(line)
@@ -358,6 +363,7 @@ async function getConceptIds(fileName){
                 
             }
             leftMost.push(arr.length)
+            leftMostStart = arr.length
             leftMost.push('')
         }
         else if(currCluster){
@@ -366,6 +372,7 @@ async function getConceptIds(fileName){
             }
             else{
                 lookForConcepts(cluster, header, idsToInsert, leftMost)
+                cluster = [arr]
             }
         }
         else{
@@ -376,10 +383,12 @@ async function getConceptIds(fileName){
     lookForConcepts(cluster, header, idsToInsert, leftMost);
     rl.close()
     fileStream.close()
-    if(!idsToInsert.includes(leftMost[0])){
+    if(!idsToInsert.includes(leftMost[0]) && leftMost[0] != leftMostStart){
         idsToInsert.push(leftMost[0])
+        console.log('ADDED!')
         //console.log(leftMost[0])
     }
+    //console.log(leftMost[0])
     let nonIntersects = []
     for(let i = 0; i < idsToInsert.length; i++){
         let found = false;
@@ -528,7 +537,7 @@ async function readFile(fileName){
                     return value;
                 }
             }).join(",");
-            console.log(cluster)
+            //console.log(cluster)
             if(i!=excelOutput.length-1 || j!=cluster.length -1){
                 toPrint += '\n'
             }
@@ -540,4 +549,4 @@ async function readFile(fileName){
     //console.log(conceptIdList)
     
 }
-readFile('prelude.csv');
+readFile('preludeToCompare.csv');
