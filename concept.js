@@ -42,8 +42,7 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
         conceptIdIndices.push(parseInt(conceptIdObjectKeys[i]))
         conceptIdReverseLookup[conceptIdObject[conceptIdObjectKeys[i]]] = parseInt(conceptIdObjectKeys[i])
     }
-    //console.log(conceptIdReverseLookup)
-    //console.log(conceptIdIndices)
+
     for(let i = 1; i < cluster.length; i++){
         let currArr = cluster[i]
         for(let j = 0; j < currArr.length; j++){
@@ -145,8 +144,8 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
         for(let j = 0; j < nonEmpty.length; j++){
             let currObject = {} 
             
-            
             let nonEmptyIndex = nonEmpty[j];
+
             
             let currValue = currRow[nonEmptyIndex]
             
@@ -184,14 +183,13 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
             }
             
         }
-        if(currRow[conceptIdReverseLookup['leftMostId']] != ''){
+        if(conceptIdReverseLookup.hasOwnProperty('leftMostId') && currRow[conceptIdReverseLookup['leftMostId']] != ''){
             currCollection['conceptId'] = currRow[conceptIdReverseLookup['leftMostId']]
         }
         if(Object.keys(currCollection).length != 0){
             let cid = generateRandomUUID(conceptIdList)
             let objKeys = Object.keys(currCollection);
             for(let i = 0; i < objKeys.length; i++){
-                //console.log(key)
                 let key = objKeys[i];
                 if(nameToConcept.hasOwnProperty(currCollection[key])){
                     cid = nameToConcept[currCollection[key]]
@@ -207,7 +205,6 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
             currCollection['conceptId'] = cid;
             collectionIds.push(cid + '.json')
             for(let i = 0; i < objKeys.length; i++){
-                //console.log(key)
                 let key = objKeys[i]
                 nameToConcept[currCollection[key]] = cid;
             }
@@ -246,7 +243,6 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
     }
     jsonList.push(firstRowJSON);
     fs.writeFileSync(firstRowJSON['conceptId'] + '.json', JSON.stringify(firstRowJSON))
-    console.log(cluster)
     return cluster;
 
 }
@@ -269,16 +265,14 @@ function CSVToArray(strData){
 
         //let nextQuote = strData.indexOf("\"")
     }
-    if(strData != ""){
-        arr.push(strData);
-    }
+    arr.push(strData);
 
     // Return the parsed data.
     return( arr );
 }
 
 function lookForConcepts(cluster, header, idsToInsert, leftMost){
-    //console.log(cluster)
+
     let leafIndex = -1;
     let nonEmpty = [];
     for(let i = 1; i < cluster.length; i++){
@@ -306,7 +300,7 @@ function lookForConcepts(cluster, header, idsToInsert, leftMost){
             leftMost[1] = header[nonEmpty[i]]
         }
     }
-    //console.log(nonEmpty)
+
     //identify which one is the leaf
 
 }
@@ -333,19 +327,15 @@ async function getConceptIds(fileName){
     let leftMost = []
     let firstNotSource = -1;
     let leftMostStart = 0;
-    //console.log(nameToConcept)
+
     for await(const line of rl){
-        //console.log(line)
-        //let arr = line.split(',');
         let arr = CSVToArray(line, ',')
         if(first){
-            //console.log(line)
             header = arr;
             first = false;
             for(let i = 0; i < arr.length; i++){
                 if(arr[i] == "Variable Name"){
                     varLabelIndex = i;
-                    //console.log(varLAbelIndex)
                 }
                 if(arr[i].indexOf('Source') != -1){
                     idsToInsert.push(i)
@@ -385,10 +375,7 @@ async function getConceptIds(fileName){
     fileStream.close()
     if(!idsToInsert.includes(leftMost[0]) && leftMost[0] != leftMostStart){
         idsToInsert.push(leftMost[0])
-        console.log('ADDED!')
-        //console.log(leftMost[0])
     }
-    //console.log(leftMost[0])
     let nonIntersects = []
     for(let i = 0; i < idsToInsert.length; i++){
         let found = false;
@@ -443,12 +430,10 @@ async function getConceptIds(fileName){
             toWrite += '\n'
             toWrite += arr.join(",");
         }
-        //console.log(arr)
     }
     rl2.close()
     fileStream2.close()
     fs.writeFileSync(fileName, toWrite)
-    //console.log(JSON.stringify(finalConceptIndices))
     return finalConceptIndices;
 }
 
@@ -458,13 +443,11 @@ async function readFile(fileName){
     let ConceptIndex = '{}'
     if(fs.existsSync('varToConcept.json')){
         ConceptIndex = fs.readFileSync('varToConcept.json', {encoding:'utf8'})
-        //console.log(ConceptIndex);
     }
     let idIndex = '[]'
     if(fs.existsSync('conceptIds.txt')){
         idIndex = fs.readFileSync('conceptIds.txt', {encoding:'utf8'})
     }
-    //console.log('idIndex: ' + idIndex)
     let conceptIdList = JSON.parse(idIndex)
     let varLabelIndex = 0;
     let cluster = []
@@ -481,9 +464,7 @@ async function readFile(fileName){
     let currCluster = false;
     let header = [];
     let nameToConcept = JSON.parse(ConceptIndex);
-    //console.log(nameToConcept)
     for await(const line of rl){
-        //console.log(line)
         //let arr = line.split(',');
         let arr = CSVToArray(line, ',')
         if(first){
@@ -503,8 +484,6 @@ async function readFile(fileName){
             else{
                 let returned = processCluster(cluster, header, nameToConcept, varLabelIndex, conceptIdList, conceptIdObject, sourceJSONS)
                 excelOutput.push(returned)
-                //console.log(cluster);
-                //console.log(cluster)
                 cluster = [arr]
                 currCluster = true;
             }
@@ -523,7 +502,6 @@ async function readFile(fileName){
     fs.writeFileSync('conceptIds.txt', JSON.stringify(conceptIdList))
     rl.close();
     fileStream.close();
-    //console.log(excelOutput)
     let toPrint = '';
     for(let i=0; i < excelOutput.length; i++){
         let cluster = excelOutput[i]
@@ -537,7 +515,6 @@ async function readFile(fileName){
                     return value;
                 }
             }).join(",");
-            //console.log(cluster)
             if(i!=excelOutput.length-1 || j!=cluster.length -1){
                 toPrint += '\n'
             }
@@ -545,8 +522,6 @@ async function readFile(fileName){
     }
     
     fs.writeFileSync(fileName, toPrint)
-    //console.log(toPrint)
-    //console.log(conceptIdList)
     
 }
 readFile('preludeToCompare.csv');
