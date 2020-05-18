@@ -46,7 +46,7 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
     for(let i = 1; i < cluster.length; i++){
         let currArr = cluster[i]
         for(let j = 0; j < currArr.length; j++){
-            if(currArr[j]!='' && !conceptIdIndices.includes(j)){
+            if(currArr[j].trim()!='' && !conceptIdIndices.includes(j)){
                 if(!nonEmpty.includes(j)){
                     nonEmpty.push(j)
                 }
@@ -374,6 +374,7 @@ async function getConceptIds(fileName){
     rl.close()
     fileStream.close()
     if(!idsToInsert.includes(leftMost[0]) && leftMost[0] != leftMostStart){
+        
         idsToInsert.push(leftMost[0])
     }
     let nonIntersects = []
@@ -392,7 +393,7 @@ async function getConceptIds(fileName){
     //sorts in descending order
     nonIntersects.sort(function(a, b){return b - a})
 
-    const fileStream2 = fs.createReadStream(fileName);
+    const fileStream2 = fs.createReadStream(fileName); 
     const rl2 = readline.createInterface({
         input: fileStream2,
         crlfDelay: Infinity
@@ -524,4 +525,4 @@ async function readFile(fileName){
     fs.writeFileSync(fileName, toPrint)
     
 }
-readFile('preludeToCompare.csv');
+readFile('prelude.csv');
