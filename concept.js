@@ -272,7 +272,6 @@ function CSVToArray(strData){
 }
 
 function lookForConcepts(cluster, header, idsToInsert, leftMost){
-
     let leafIndex = -1;
     let nonEmpty = [];
     for(let i = 1; i < cluster.length; i++){
@@ -402,13 +401,21 @@ async function getConceptIds(fileName){
     first = true;
     let finalConceptIndices = {};
     for await(const line of rl2){
-        let arr = line.split(',')
+        let arr = CSVToArray(line, ',')
         if(first == true){
             let general = arr[firstNotSource]
             for(let i = 0; i < nonIntersects.length; i++){
                 arr.splice(nonIntersects[i],0,'conceptId')
             }
-            toWrite += arr.join(",");
+
+            toWrite += arr.map(function(value){
+                if(value.indexOf(',') != -1){
+                    return "\"" + value + "\"";
+                }
+                else{
+                    return value;
+                }
+            }).join(",");
             first = false;
             for(let i = 0; i < arr.length; i++){
                 if(arr[i].includes('conceptId') && i != arr.length - 1){
@@ -429,7 +436,14 @@ async function getConceptIds(fileName){
                 arr.splice(nonIntersects[i],0,'')
             }
             toWrite += '\n'
-            toWrite += arr.join(",");
+            toWrite += arr.map(function(value){
+                if(value.indexOf(',') != -1){
+                    return "\"" + value + "\"";
+                }
+                else{
+                    return value;
+                }
+            }).join(",");
         }
     }
     rl2.close()
