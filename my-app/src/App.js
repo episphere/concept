@@ -188,7 +188,7 @@ processCluster(cluster, header, nameToConcept, indexVariableName, conceptIdList,
           }
           
       }
-      if(currRow[conceptIdReverseLookup['leftMostId']] != ''){
+      if(conceptIdReverseLookup.hasOwnProperty('leftMostId') && currRow[conceptIdReverseLookup['leftMostId']] != ''){
           currCollection['conceptId'] = currRow[conceptIdReverseLookup['leftMostId']]
       }
       if(Object.keys(currCollection).length != 0){

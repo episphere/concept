@@ -218,7 +218,9 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
         firstRowJSON[header[leafIndex]] = leafObj;
     }
     else{
-        firstRowJSON['subcollection'] = collectionIds;
+        if(collectionIds.length != 0){
+            firstRowJSON['subcollection'] = collectionIds;
+        }
         for(let i = 0; i < collections.length; i++){
             let currCollection = collections[i]
             currCollection[header[leafIndex]] = leafObj;
@@ -248,6 +250,7 @@ function processCluster(cluster, header, nameToConcept, indexVariableName, conce
 }
 
 function CSVToArray(strData){
+    strData = strData.trim();
     let arr = [];
     while(strData.indexOf(",") != -1 ){
         let toPush = "";
@@ -539,4 +542,4 @@ async function readFile(fileName){
     fs.writeFileSync(fileName, toPrint)
     
 }
-readFile('prelude.csv');
+readFile('testNonCodebook.csv');
